@@ -1,0 +1,14 @@
+{
+  "name": "edtech",
+  "private": true,
+  "workspaces": [
+    "packages/sotajs",
+    "packages/lms"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
