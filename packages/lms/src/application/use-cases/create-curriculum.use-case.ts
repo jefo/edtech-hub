@@ -93,7 +93,7 @@ export const createCurriculumUseCase = async (input: CreateCurriculumInput) => {
     id: crypto.randomUUID(),
     learnerId,
     targetCompetencies,
-    modules: modules.map(m => m.state),
+    modules: modules, // Modules are now ModuleProps[], not Module[]
   });
 
   await saveCurriculum(curriculum);

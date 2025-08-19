@@ -60,12 +60,13 @@ describe('createCurriculumUseCase', () => {
     const module3 = savedCurriculum.state.modules[2];
 
     expect(module1.name).toBe('Module 1');
-    expect(module1.transformations[0].skillId).toBe(skill1.state.id);
+    expect(module1.lessons[0].learningObjectives).toHaveLength(1);
+    expect(module1.lessons[0].learningObjectives[0].description).toContain(skill1.state.name);
 
     expect(module2.name).toBe('Module 2');
-    expect(module2.transformations[0].skillId).toBe(skill2.state.id);
+    expect(module2.lessons[0].transformation.skillId).toBe(skill2.state.id);
 
     expect(module3.name).toBe('Module 3');
-    expect(module3.transformations[0].skillId).toBe(skill3.state.id);
+    expect(module3.lessons[0].transformation.skillId).toBe(skill3.state.id);
   });
 });

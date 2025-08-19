@@ -1,13 +1,14 @@
+import { LearningObjective } from '@lms/domain/curriculum/learning-objective.vo';
 import { Module } from '@lms/domain/curriculum/module.entity';
+import { Lesson } from '@lms/domain/curriculum/lesson.entity';
 import { Skill } from '@lms/domain/skill/skill.aggregate';
-import { Transformation } from '@lms/domain/curriculum/transformation.vo';
 import { TransformationProps } from '@lms/domain/curriculum/transformation.vo';
 import { ICurriculumSequencingStrategy } from './sequencing.strategy';
 
 export class TopologicalSortStrategy implements ICurriculumSequencingStrategy {
-  sequence(gaps: TransformationProps[], skills: Map<string, Skill>): Module[] {
-    const modules: Module[] = [];
-    let skillsForModuleGen = new Set(skills.keys());
+  sequence(gaps: TransformationProps[], skills: Map<string, Skill>): ModuleProps[] {
+    const modules: ModuleProps[] = [];
+    const skillsForModuleGen = new Set(skills.keys());
     let moduleLevel = 1;
 
     while (skillsForModuleGen.size > 0) {
@@ -23,17 +24,26 @@ export class TopologicalSortStrategy implements ICurriculumSequencingStrategy {
         throw new Error('Circular dependency detected in skills graph');
       }
 
-      const transformations = gaps
-        .filter(gap => moduleSkillIds.has(gap.skillId))
-        .map(gap => Transformation.create(gap).props);
+      const transformations = gaps.filter(gap => moduleSkillIds.has(gap.skillId));
 
       if (transformations.length > 0) {
+        const lessons = transformations.map((t, i) => {
+            const skillName = skills.get(t.skillId)?.state.name || 'Unknown Skill';
+            return Lesson.create({
+                id: crypto.randomUUID(),
+                name: `Introduction to ${skillName}`,
+                sequence: i + 1,
+                transformation: t,
+                learningObjectives: [LearningObjective.create({ description: `Understand the core concepts of ${skillName}` }).props],
+            }).props;
+        });
+
         const newModule = Module.create({
           id: crypto.randomUUID(),
           name: `Module ${moduleLevel}`,
-          transformations: transformations,
+          lessons: lessons,
         });
-        modules.push(newModule);
+        modules.push(newModule.props);
         moduleLevel++;
       }
 

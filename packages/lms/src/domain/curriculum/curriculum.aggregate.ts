@@ -1,13 +1,12 @@
 import { z } from 'zod';
 import { createAggregate } from '@sota/core/aggregate';
-import { ModuleProps } from './module.entity';
-import { CompetencyProps } from '@lms/domain/competency/competency.vo';
 
 const CurriculumPropsSchema = z.object({
   id: z.string().uuid(),
-  learnerId: z.string().uuid(),
-  targetCompetencies: z.array(z.custom<CompetencyProps>()),
-  modules: z.array(z.custom<ModuleProps>()),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  // A curriculum is composed of an ordered list of module IDs.
+  moduleIds: z.array(z.string().uuid()),
 });
 
 export type CurriculumProps = z.infer<typeof CurriculumPropsSchema>;
@@ -15,9 +14,17 @@ export type CurriculumProps = z.infer<typeof CurriculumPropsSchema>;
 export const Curriculum = createAggregate({
   name: 'Curriculum',
   schema: CurriculumPropsSchema,
-  invariants: [],
+  invariants: [
+    (state) => {
+        if (state.moduleIds.length === 0) {
+            throw new Error('Curriculum must contain at least one module.');
+        }
+    }
+  ],
   actions: {
-    // Actions like startModule, completeModule could be added here later
+    changeTitle: (state: CurriculumProps, newTitle: string) => {
+        return { state: { ...state, title: newTitle } };
+    },
   },
 });
 

@@ -21,11 +21,15 @@ async function printCurriculum(curriculumId: string) {
     const skillsMap = new Map(allSkills.map(s => [s.state.id, s]));
 
     for (const module of curriculum.state.modules) {
-        console.log(`\n  [${module.name}]`);
-        for (const t of module.transformations) {
-            const skill = skillsMap.get(t.skillId);
+        console.log(`
+  [${module.name}]`);
+        for (const lesson of module.lessons) {
+            const skill = skillsMap.get(lesson.transformation.skillId);
             if (skill) {
-                console.log(`  - ${skill.state.name}: Level ${t.fromLevel} -> ${t.toLevel}`);
+                console.log(`  - Урок: ${lesson.name}`);
+                lesson.learningObjectives.forEach(objective => {
+                    console.log(`    - Цель: ${objective.description}`);
+                });
             }
         }
     }

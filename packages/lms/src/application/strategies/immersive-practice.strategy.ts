@@ -1,18 +1,16 @@
+import { LearningObjective } from '@lms/domain/curriculum/learning-objective.vo';
 import { Module } from '@lms/domain/curriculum/module.entity';
+import { Lesson } from '@lms/domain/curriculum/lesson.entity';
 import { Skill } from '@lms/domain/skill/skill.aggregate';
-import { Transformation } from '@lms/domain/curriculum/transformation.vo';
 import { TransformationProps } from '@lms/domain/curriculum/transformation.vo';
 import { ICurriculumSequencingStrategy } from './sequencing.strategy';
 
-// A simple, opinionated strategy for demonstration.
-// It considers skills with no prerequisites of their own as 'foundational'.
 export class ImmersivePracticeStrategy implements ICurriculumSequencingStrategy {
-  sequence(gaps: TransformationProps[], skills: Map<string, Skill>): Module[] {
-    const modules: Module[] = [];
+  sequence(gaps: TransformationProps[], skills: Map<string, Skill>): ModuleProps[] {
+    const modules: ModuleProps[] = [];
     const skillsForModuleGen = new Set(skills.keys());
     let moduleLevel = 1;
 
-    // Identify foundational skills (no prereqs within the gap)
     const foundationalSkillIds = new Set<string>();
     skills.forEach(skill => {
         if (skill.state.prerequisiteSkillIds.length === 0) {
@@ -42,16 +40,25 @@ export class ImmersivePracticeStrategy implements ICurriculumSequencingStrategy 
       pendingFoundationalTransforms.push(...foundationalTransforms);
 
       if (practicalTransforms.length > 0) {
-        const allTransformsForModule = [...pendingFoundationalTransforms, ...practicalTransforms].map(t => Transformation.create(t).props);
+        const allTransformsForModule = [...pendingFoundationalTransforms, ...practicalTransforms];
+        const lessons = allTransformsForModule.map((t, i) => {
+            const skillName = skills.get(t.skillId)?.state.name || 'Unknown Skill';
+            return Lesson.create({
+                id: crypto.randomUUID(),
+                name: `Intro to ${skillName}`,
+                sequence: i + 1,
+                transformation: t,
+                learningObjectives: [LearningObjective.create({ description: `Understand the core concepts of ${skillName}` }).props],
+            }).props;
+        });
         
         const newModule = Module.create({
           id: crypto.randomUUID(),
           name: `Module ${moduleLevel}`,
-          transformations: allTransformsForModule,
+          lessons: lessons,
         });
-        modules.push(newModule);
+        modules.push(newModule.props);
 
-        // Reset pending transformations and increment level
         pendingFoundationalTransforms = [];
         moduleLevel++;
       }
@@ -59,13 +66,22 @@ export class ImmersivePracticeStrategy implements ICurriculumSequencingStrategy 
       levelSkillIds.forEach(id => skillsForModuleGen.delete(id));
     }
 
-    // If any foundational skills were left over (e.g., a purely theoretical course)
     if (pendingFoundationalTransforms.length > 0) {
+        const lessons = pendingFoundationalTransforms.map((t, i) => {
+            const skillName = skills.get(t.skillId)?.state.name || 'Unknown Skill';
+            return Lesson.create({
+                id: crypto.randomUUID(),
+                name: `Intro to ${skillName}`,
+                sequence: i + 1,
+                transformation: t,
+                learningObjectives: [LearningObjective.create({ description: `Understand the core concepts of ${skillName}` }).props],
+            }).props;
+        });
         modules.push(Module.create({
             id: crypto.randomUUID(),
             name: `Module ${moduleLevel}`,
-            transformations: pendingFoundationalTransforms.map(t => Transformation.create(t).props),
-        }));
+            lessons: lessons,
+        }).props);
     }
 
     return modules;
